@@ -1,0 +1,14 @@
+{
+    "name": "Webknot",
+    "version": "0.0.1",
+    "description": "Webknot connects webhooks",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js"
+    },
+    "engines": {
+        "node": "0.10.x"
+    },
+    "author": "Frank Shaka",
+    "license": "MIT"
+}
