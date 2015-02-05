@@ -56,6 +56,7 @@ function handleRequest(request, response) {
     response.end();
 }
 
-http.createServer(handleRequest).listen(8080);
+var port = process.env.PORT || 18080;
+http.createServer(handleRequest).listen(port);
 
-console.log('Server running at port 8080.');
+console.log('Server running at port ' + port);
