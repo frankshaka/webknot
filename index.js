@@ -21,7 +21,7 @@ function handleResponse(response) {
 }
 
 function handleError(error) {
-
+    console.log('ERROR: ' + error.message);
 }
 
 function handleRequest(request, response) {
@@ -56,6 +56,6 @@ function handleRequest(request, response) {
     response.end();
 }
 
-http.createServer(handleRequest).listen(80);
+http.createServer(handleRequest).listen(8080);
 
-console.log('Server running at port 80.');
+console.log('Server running at port 8080.');
