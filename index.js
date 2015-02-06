@@ -42,7 +42,7 @@ function handleRequest(request, response) {
     var urlData = urlParser.parse(request.url);
     if (urlData.pathname == '/') {
         response.statusCode = 200;
-        response.send(mainHTML);
+        response.write(mainHTML);
     }else {
         var converterId = urlData.pathname.substr(1);
         var convert = converters[converterId];
@@ -65,7 +65,10 @@ function handleRequest(request, response) {
                     response.statusCode = 200;
 
                     if (target.response) {
-                        response.send(target.response);
+                        response.send(
+                            typeof target.response == 'string' ?
+                            target.response :
+                            JSON.stringify(target.response));
                     }
                 }else {
                     response.statusCode = 200;
