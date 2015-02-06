@@ -14,6 +14,7 @@ if (typeof String.prototype.startsWith != 'function') {
 }
 
 var http = require('http');
+var https = require('https');
 var urlParser = require('url');
 var qs = require('querystring');
 
@@ -115,7 +116,8 @@ function handleWebhookRequest(request, response) {
         upstreamRequestOptions.headers['Content-Type'] = formatter.contentType;
         upstreamRequestOptions.headers['Content-Length'] = (upstreamRequestBody||'').length;
 
-        var upstreamRequest = http.request(upstreamRequestOptions, function(upstreamResponse) {
+        var client = upstreamRequestOptions.protocol == 'https:' ? https : http;
+        var upstreamRequest = client.request(upstreamRequestOptions, function(upstreamResponse) {
             var upstreamResponseStatusCode = upstreamResponse.statusCode;
             var upstreamResponseBody = '';
             upstreamResponse.setEncoding('utf8');
