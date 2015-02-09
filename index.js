@@ -22,8 +22,8 @@ var mainHTML = 'Gotcha!';
 
 var converters = {
 
-    'test': function(data, headers) {
-        var url = headers['x-target-url'] || 'http://requestb.in/1msdb5t1';
+    'test': function(request, data) {
+        var url = request.headers['x-target-url'] || 'http://requestb.in/1msdb5t1';
         return {
             url: url,
             format: 'json',
@@ -31,14 +31,50 @@ var converters = {
         };
     },
 
-    'sns2slack': function(data, headers) {
-        return {
-            url: 'https://hooks.slack.com/services/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',
-            format: 'json',
-            data: {
-                'text': '' + data['Subject'] + '\n\n' + data['Message']
+    'sns2slack': function(request, data) {
+        var snsType = request.headers['x-amz-sns-message-type'];
+        var snsTopicArn = request.headers['x-amz-sns-topic-arn'];
+        if (snsType == 'SubscriptionConfirmation') {
+            var subscribeURL = data['SubscribeURL'];
+            console.log('Subscribing to SNS topic: ' + snsTopicArn);
+            var subscribeRequest = https.request(urlParser.parse(subscribeURL), function(response) {
+                var responseBody = '';
+                response.on('data', function(chunk) {
+                    responseBody += chunk;
+                });
+                response.on('end', function() {
+                    if (response.statusCode == 200) {
+                        console.log('Successfully subscribed to SNS topic: ' + snsTopicArn);
+                    }else {
+                        console.log('Failed to subscribe to SNS topic: [' + response.statusCode + '] ' + responseBody);
+                    }
+                });
+            });
+            subscribeRequest.on('error', function(error) {
+                console.log('Failed to subscribe to SNS topic: ' + error.message);
+            });
+            subscribeRequest.end();
+            return;
+        }
+
+        if (snsType == 'Notification') {
+            var suffix = request.locationSegments.slice(1).join('/');
+            var url = 'https://hooks.slack.com/services/' + suffix;
+            var subject = data['Subject'];
+            var message = data['Message'];
+            if (subject || message) {
+                return {
+                    url: url,
+                    format: 'json',
+                    data: {
+                        'text': subject && message ? subject + '\n\n' + message :
+                            (message || subject)
+                    }
+                };
             }
-        };
+        }
+
+        return null;
     }
 };
 
@@ -82,7 +118,8 @@ function handleQueryRequest(request, response) {
 }
 
 function handleWebhookRequest(request, response) {
-    var converterType = request.location.pathname.substr(1);
+    request.locationSegments = request.location.pathname.match(/^\/?(.*)\/?$/)[1].split('/');
+    var converterType = request.locationSegments[0];
     console.log('CONVERTER_TYPE: ' + converterType);
     var convert = converters[converterType];
     if (!convert) {
@@ -99,10 +136,15 @@ function handleWebhookRequest(request, response) {
         var contentType = request.headers['content-type'];
         var requestData = parseData(requestBody, contentType);
 
-        var upstream = convert(requestData, request.headers);
+        var upstream = convert(request, requestData);
         if (!upstream) {
-            response.writeHead(400);
+            response.writeHead(200);
             return response.end();
+        }
+
+        if (upstream.invalid) {
+            response.writeHead(400);
+            return response.end(upstream.invalid);
         }
 
         console.log('UPSTREAM OPTIONS: ' + JSON.stringify(upstream));
