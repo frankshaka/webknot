@@ -36,8 +36,23 @@ var converters = {
         if (typeof data == 'string') {
             data = JSON.parse(data);
         }
+
+        var suffix = request.locationSegments.slice(1).join('/');
+        var url = 'https://hooks.slack.com/services/' + suffix;
+
         var snsType = request.headers['x-amz-sns-message-type'];
         var snsTopicArn = request.headers['x-amz-sns-topic-arn'];
+
+        if (snsType == 'UnsubscribeConfirmation') {
+            return {
+                url: url,
+                format: 'json',
+                data: {
+                    'text': 'Unsubscribed from Amazon SNS topic "' + snsTopicArn + '".'
+                }
+            };
+        }
+
         if (snsType == 'SubscriptionConfirmation') {
             var subscribeURL = data['SubscribeURL'];
             console.log('Subscribing to SNS topic: ' + snsTopicArn + ' url: ' + subscribeURL);
@@ -58,12 +73,16 @@ var converters = {
                 console.log('Failed to subscribe to SNS topic: ' + error.message);
             });
             subscribeRequest.end();
-            return;
+            return {
+                url: url,
+                format: 'json',
+                data: {
+                    'text': 'Subscribed to Amazon SNS topic "' + snsTopicArn + '".'
+                }
+            };
         }
 
         if (snsType == 'Notification') {
-            var suffix = request.locationSegments.slice(1).join('/');
-            var url = 'https://hooks.slack.com/services/' + suffix;
             var subject = data['Subject'];
             var message = data['Message'];
             if (subject || message) {
@@ -73,6 +92,15 @@ var converters = {
                     data: {
                         'text': subject && message ? subject + '\n\n' + message :
                             (message || subject)
+                    }
+                };
+            }else {
+                return {
+                    url: url,
+                    format: 'json',
+                    data: {
+                        'text': '[Unidentified Notification]\n-------------------------\n\n' +
+                            JSON.stringify(data) + '\n-------------------------'
                     }
                 };
             }
