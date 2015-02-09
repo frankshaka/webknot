@@ -23,7 +23,8 @@ var mainHTML = 'Gotcha!';
 var converters = {
 
     'test': function(request, data) {
-        var url = request.headers['x-target-url'] || 'http://requestb.in/1msdb5t1';
+        var suffix = request.locationSegments.slice(1).join('/');
+        var url = request.headers['x-target-url'] || 'http://requestb.in/' + suffix;
         return {
             url: url,
             format: 'json',
