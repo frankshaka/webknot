@@ -32,11 +32,14 @@ var converters = {
     },
 
     'sns2slack': function(request, data) {
+        if (typeof data == 'string') {
+            data = JSON.parse(data);
+        }
         var snsType = request.headers['x-amz-sns-message-type'];
         var snsTopicArn = request.headers['x-amz-sns-topic-arn'];
         if (snsType == 'SubscriptionConfirmation') {
             var subscribeURL = data['SubscribeURL'];
-            console.log('Subscribing to SNS topic: ' + snsTopicArn);
+            console.log('Subscribing to SNS topic: ' + snsTopicArn + ' url: ' + subscribeURL);
             var subscribeRequest = https.request(urlParser.parse(subscribeURL), function(response) {
                 var responseBody = '';
                 response.on('data', function(chunk) {
